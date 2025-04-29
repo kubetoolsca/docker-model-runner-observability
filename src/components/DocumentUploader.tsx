@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/hooks/use-toast';
-import { upload } from 'lucide-react';
+import { Upload } from 'lucide-react';
 
 interface DocumentUploaderProps {
   setAnalysisResult: React.Dispatch<React.SetStateAction<string | null>>;
@@ -112,7 +112,7 @@ const DocumentUploader: React.FC<DocumentUploaderProps> = ({
         onChange={handleFileChange}
       />
       
-      <upload className="mx-auto h-12 w-12 text-gray-400" />
+      <Upload className="mx-auto h-12 w-12 text-gray-400" />
       
       <p className="mt-2 text-sm text-gray-600">
         Drag and drop your PDF document here, or

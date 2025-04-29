@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
-import { loader } from 'lucide-react';
+import { Loader } from 'lucide-react';
 
 interface DocumentAnalysisResultProps {
   result: string | null;
@@ -23,7 +23,7 @@ const DocumentAnalysisResult: React.FC<DocumentAnalysisResultProps> = ({
       <CardContent className="pt-6">
         {isLoading ? (
           <div className="flex flex-col items-center justify-center py-8">
-            <loader className="h-8 w-8 text-indigo-600 animate-spin" />
+            <Loader className="h-8 w-8 text-indigo-600 animate-spin" />
             <p className="mt-4 text-gray-600">
               Analyzing {documentName}...
             </p>
