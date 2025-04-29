@@ -1,73 +1,47 @@
-# Welcome to your Lovable project
 
-## Project info
+# Document Analysis App with Docker Model Runner
 
-**URL**: https://lovable.dev/projects/cd5b2649-cde8-4692-9c54-0dccaef5bec8
+This application allows you to upload PDF documents, extract text, and analyze the content using a locally running LLM via Docker Model Runner.
 
-## How can I edit this code?
+## Prerequisites
 
-There are several ways of editing your application.
+- Docker Desktop (version 4.40 or later) with Docker Model Runner enabled
+- The Llama 3 model pulled locally (`docker model pull ai/llama3`)
 
-**Use Lovable**
+## Setup Instructions
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/cd5b2649-cde8-4692-9c54-0dccaef5bec8) and start prompting.
+1. Enable Docker Model Runner in Docker Desktop
+   ```
+   docker desktop enable model-runner
+   ```
 
-Changes made via Lovable will be committed automatically to this repo.
+2. Pull the Llama 3 model
+   ```
+   docker model pull ai/llama3
+   ```
 
-**Use your preferred IDE**
+3. Start the application
+   ```
+   docker-compose up -d
+   ```
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+4. Access the application at http://localhost:3000
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+## Architecture
 
-Follow these steps:
+This application consists of:
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+- Frontend: React application with document upload capability
+- Backend (MCP Server): Express.js server that extracts text from PDFs and calls Docker Model Runner
+- Docker Model Runner: Runs the Llama 3 model locally
+- Observability Stack: OpenTelemetry, Jaeger, Prometheus, and Grafana for monitoring
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+## Monitoring
 
-# Step 3: Install the necessary dependencies.
-npm i
+- Jaeger UI: http://localhost:16686
+- Prometheus: http://localhost:9090
+- Grafana: http://localhost:3000 (admin/admin)
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
+## License
 
-**Edit a file directly in GitHub**
-
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
-
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/cd5b2649-cde8-4692-9c54-0dccaef5bec8) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+MIT

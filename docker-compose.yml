@@ -1,0 +1,65 @@
+
+version: '3.8'
+
+services:
+  # MCP Server (Backend)
+  mcp-server:
+    build: ./backend
+    ports:
+      - "8001:8001"
+    environment:
+      - PORT=8001
+      - DMR_API_ENDPOINT=http://model-runner.docker.internal:12434/v1
+      - TARGET_MODEL=ai/llama3:latest
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    depends_on:
+      - otel-collector
+
+  # OpenTelemetry Collector
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.96.0
+    command: ["--config=/etc/otel-collector-config.yaml"]
+    volumes:
+      - ./observability/otel-collector-config.yaml:/etc/otel-collector-config.yaml
+    ports:
+      - "4318:4318"   # OTLP HTTP receiver
+      - "8889:8889"   # Prometheus metrics exporter
+
+  # Jaeger for trace visualization
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    ports:
+      - "16686:16686"  # UI
+      - "14250:14250"  # Collector
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+
+  # Prometheus for metrics storage
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - ./observability/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    ports:
+      - "9090:9090"
+    depends_on:
+      - otel-collector
+
+  # Grafana for dashboards
+  grafana:
+    image: grafana/grafana:latest
+    volumes:
+      - ./observability/grafana/provisioning/:/etc/grafana/provisioning/
+      - grafana_data:/var/lib/grafana
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+      - jaeger
+
+volumes:
+  prometheus_data:
+  grafana_data:
