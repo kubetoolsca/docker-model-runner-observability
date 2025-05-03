@@ -68,7 +68,7 @@ services:
       - ./observability/grafana/provisioning/:/etc/grafana/provisioning/
       - grafana_data:/var/lib/grafana
     ports:
-      - "3000:3000"
+      - "3001:3000"  # Changed from 3000:3000 to 3001:3000 to avoid port conflict
     depends_on:
       - prometheus
       - jaeger
