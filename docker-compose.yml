@@ -2,14 +2,29 @@
 version: '3.8'
 
 services:
+  # Frontend Application
+  frontend:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - NODE_ENV=development
+    volumes:
+      - .:/app
+      - /app/node_modules
+    depends_on:
+      - mcp-server
+
   # MCP Server (Backend)
   mcp-server:
     build: ./backend
     ports:
-      - "8001:8001"
+      - "3000:3000"
     environment:
-      - PORT=8001
-      - DMR_API_ENDPOINT=http://model-runner.docker.internal:12434/v1
+      - PORT=3000
+      - DMR_API_ENDPOINT=http://model-runner:8001/analyze
       - TARGET_MODEL=ai/llama3:latest
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
     volumes:
@@ -17,6 +32,25 @@ services:
       - /app/node_modules
     depends_on:
       - otel-collector
+      - model-runner
+
+  # Docker Model Runner for Llama
+  model-runner:
+    image: ghcr.io/huggingface/docker-model-runner:latest
+    ports:
+      - "8001:8001"
+    environment:
+      - PORT=8001
+      - MODEL=mistralai/mistral-7b-instruct-v0.2
+    volumes:
+      - model_cache:/data
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
 
   # OpenTelemetry Collector
   otel-collector:
@@ -63,3 +97,4 @@ services:
 volumes:
   prometheus_data:
   grafana_data:
+  model_cache:

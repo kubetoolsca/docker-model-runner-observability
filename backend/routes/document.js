@@ -47,21 +47,43 @@ router.post('/analyze', upload.single('file'), async (req, res) => {
     const pdfData = await pdfParse(dataBuffer);
     const extractedText = pdfData.text;
     
+    // For development without docker model runner, return mock data
+    if (!process.env.DMR_API_ENDPOINT) {
+      console.log('DMR_API_ENDPOINT not set. Using mock analysis.');
+      
+      // Clean up the uploaded file
+      fs.unlinkSync(filePath);
+      
+      return res.json({ 
+        result: `Analysis for "${req.file.originalname}" (${extractedText.length} characters extracted):\n\n` +
+                `This is a mock analysis response. To enable real analysis, set the DMR_API_ENDPOINT environment variable.\n\n` +
+                `Extracted text sample: "${extractedText.substring(0, 200)}..."`
+      });
+    }
+    
     try {
-      // Call the Docker Model Runner for analysis (assuming it's running on port 8001)
-      const response = await axios.post('http://localhost:8001/analyze', {
+      const modelRunnerEndpoint = process.env.DMR_API_ENDPOINT || 'http://localhost:8001/analyze';
+      
+      // Call the Docker Model Runner for analysis
+      console.log(`Calling model runner at: ${modelRunnerEndpoint}`);
+      const response = await axios.post(modelRunnerEndpoint, {
         document_text: extractedText,
         document_name: req.file.originalname,
         document_type: 'application/pdf'
+      }, {
+        timeout: 30000 // 30 second timeout
       });
 
       // Return the analysis result
       res.json({ result: response.data.result });
     } catch (error) {
       console.error('Error calling Docker Model Runner:', error.message);
+      
+      // Return a more user-friendly error
       res.status(500).json({ 
         error: 'Error analyzing document with LLM',
-        details: error.message 
+        details: error.message,
+        message: 'The model runner service is not available. Please check your Docker setup.'
       });
     }
 

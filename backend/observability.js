@@ -5,7 +5,7 @@ const { NodeSDK } = require('@opentelemetry/sdk-node');
 const { OTLPTraceExporter } = require('@opentelemetry/exporter-trace-otlp-proto');
 const { getNodeAutoInstrumentations } = require('@opentelemetry/auto-instrumentations-node');
 
-function setupObservability(serviceName) {
+function setupObservability(serviceName = 'document-analysis-service') {
   const resource = new Resource({
     [SemanticResourceAttributes.SERVICE_NAME]: serviceName,
   });
@@ -47,5 +47,8 @@ function setupObservability(serviceName) {
   
   return sdk;
 }
+
+// Initialize the OpenTelemetry SDK
+setupObservability();
 
 module.exports = { setupObservability };

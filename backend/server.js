@@ -5,7 +5,7 @@ const morgan = require('morgan');
 const path = require('path');
 
 // Import OpenTelemetry
-require('./observability');
+const { setupObservability } = require('./observability');
 
 const app = express();
 const PORT = process.env.PORT || 3000;

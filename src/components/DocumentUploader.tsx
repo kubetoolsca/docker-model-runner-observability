@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/hooks/use-toast';
-import { Upload } from 'lucide-react';
+import { Upload, AlertTriangle } from 'lucide-react';
 
 interface DocumentUploaderProps {
   setAnalysisResult: React.Dispatch<React.SetStateAction<string | null>>;
@@ -72,7 +72,9 @@ const DocumentUploader: React.FC<DocumentUploaderProps> = ({
       });
       
       if (!response.ok) {
-        throw new Error(`Server responded with ${response.status}`);
+        const errorData = await response.json().catch(() => ({}));
+        console.error("Server error:", errorData);
+        throw new Error(errorData.message || `Server responded with ${response.status}`);
       }
       
       const data = await response.json();
@@ -86,7 +88,7 @@ const DocumentUploader: React.FC<DocumentUploaderProps> = ({
       console.error("Error analyzing document:", error);
       toast({
         title: "Analysis failed",
-        description: "There was an error analyzing your document",
+        description: error instanceof Error ? error.message : "There was an error analyzing your document",
         variant: "destructive"
       });
     } finally {
