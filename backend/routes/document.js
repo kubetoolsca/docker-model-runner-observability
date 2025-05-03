@@ -62,28 +62,63 @@ router.post('/analyze', upload.single('file'), async (req, res) => {
     }
     
     try {
-      const modelRunnerEndpoint = process.env.DMR_API_ENDPOINT || 'http://localhost:8001/analyze';
+      const dmrEndpoint = process.env.DMR_API_ENDPOINT;
+      const targetModel = process.env.TARGET_MODEL || 'ai/llama3.2:1B-Q8_0';
       
-      // Call the Docker Model Runner for analysis
-      console.log(`Calling model runner at: ${modelRunnerEndpoint}`);
-      const response = await axios.post(modelRunnerEndpoint, {
-        document_text: extractedText,
-        document_name: req.file.originalname,
-        document_type: 'application/pdf'
+      console.log(`Calling Docker Model Runner at: ${dmrEndpoint}`);
+      console.log(`Using model: ${targetModel}`);
+      
+      // Prepare the prompt for the LLM
+      const prompt = `Analyze the following document and provide a concise summary:
+      
+Document Name: ${req.file.originalname}
+Document Type: PDF
+Document Content:
+
+${extractedText.substring(0, 3000)}... (truncated)
+
+Please provide:
+1. A brief summary of the document (3-5 sentences)
+2. Main topics or key points
+3. Any action items or recommendations`;
+
+      // Call the Docker Model Runner API
+      const response = await axios.post(dmrEndpoint, {
+        model: targetModel,
+        prompt: prompt,
+        stream: false,
+        options: {
+          temperature: 0.7,
+          max_tokens: 1024
+        }
       }, {
-        timeout: 30000 // 30 second timeout
+        timeout: 60000, // 60 second timeout
+        headers: {
+          'Content-Type': 'application/json'
+        }
       });
 
+      // Extract the result from the response
+      let result;
+      if (response.data && response.data.response) {
+        result = response.data.response;
+      } else if (response.data && response.data.result) {
+        result = response.data.result;
+      } else {
+        result = JSON.stringify(response.data);
+      }
+
       // Return the analysis result
-      res.json({ result: response.data.result });
+      res.json({ result });
     } catch (error) {
       console.error('Error calling Docker Model Runner:', error.message);
+      console.error('Error details:', error.response?.data || 'No additional error details');
       
       // Return a more user-friendly error
       res.status(500).json({ 
         error: 'Error analyzing document with LLM',
         details: error.message,
-        message: 'The model runner service is not available. Please check your Docker setup.'
+        message: 'There was an issue communicating with the Docker Model Runner. Please ensure it is running and accessible.'
       });
     }
 
