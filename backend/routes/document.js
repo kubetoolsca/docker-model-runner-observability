@@ -72,41 +72,44 @@ Please provide:
 2. Main topics or key points
 3. Any action items or recommendations`;
 
+        // Try multiple endpoint variations if the default one fails
+        let response;
+        let errorMessages = [];
+        
         try {
-          // Call the Docker Model Runner API
-          const response = await axios.post(dmrEndpoint, {
-            model: targetModel,
-            prompt: prompt,
-            stream: false,
-            options: {
-              temperature: 0.7,
-              max_tokens: 1024
-            }
-          }, {
-            timeout: 60000, // 60 second timeout
-            headers: {
-              'Content-Type': 'application/json'
-            }
-          });
-
-          // Extract the result from the response
-          if (response.data && response.data.response) {
-            result = response.data.response;
-          } else if (response.data && response.data.result) {
-            result = response.data.result;
-          } else {
-            result = JSON.stringify(response.data);
-          }
-        } catch (dmrError) {
-          console.error('Error calling Docker Model Runner:', dmrError.message);
-          console.error('Error details:', dmrError.response?.data || 'No additional error details');
+          // First try the configured endpoint
+          console.log("Attempting to call configured endpoint:", dmrEndpoint);
+          response = await callDockerModelRunner(dmrEndpoint, targetModel, prompt);
+        } catch (error1) {
+          errorMessages.push(`Primary endpoint error: ${error1.message}`);
           
-          // Fallback to a basic analysis
-          result = `Analysis for "${req.file.originalname}" (without LLM enhancement):\n\n` +
-                  `The document contains ${extractedText.length} characters.\n\n` +
-                  `Text Sample:\n${extractedText.substring(0, 500)}...\n\n` +
-                  `Note: AI-powered analysis is unavailable. Please check if Docker Model Runner is properly set up and running.\n` +
-                  `Error: ${dmrError.message}`;
+          // If host.docker.internal fails, try localhost
+          try {
+            const localhostEndpoint = dmrEndpoint.replace('host.docker.internal', 'localhost');
+            console.log("Attempting to call localhost endpoint:", localhostEndpoint);
+            response = await callDockerModelRunner(localhostEndpoint, targetModel, prompt);
+          } catch (error2) {
+            errorMessages.push(`Localhost endpoint error: ${error2.message}`);
+            
+            // If that fails too, try with IP 172.17.0.1 (common Docker host IP)
+            try {
+              const ipEndpoint = dmrEndpoint.replace('host.docker.internal', '172.17.0.1');
+              console.log("Attempting to call IP endpoint:", ipEndpoint);
+              response = await callDockerModelRunner(ipEndpoint, targetModel, prompt);
+            } catch (error3) {
+              errorMessages.push(`IP endpoint error: ${error3.message}`);
+              throw new Error(`All endpoints failed. ${errorMessages.join('; ')}`);
+            }
+          }
+        }
+
+        // Extract the result from the response
+        if (response.data && response.data.response) {
+          result = response.data.response;
+        } else if (response.data && response.data.result) {
+          result = response.data.result;
+        } else {
+          result = JSON.stringify(response.data);
         }
       } else {
         // Fallback when DMR_API_ENDPOINT is not set
@@ -125,7 +128,7 @@ Please provide:
       const fallbackResult = `Analysis for "${req.file.originalname}" (extracted text only):\n\n` +
                             `The document contains ${extractedText.length} characters.\n\n` +
                             `Text Sample:\n${extractedText.substring(0, 500)}...\n\n` +
-                            `Note: Full analysis is unavailable due to a system error.`;
+                            `Note: Full analysis is unavailable due to a system error: ${error.message}`;
       
       res.json({ result: fallbackResult });
     }
@@ -141,5 +144,23 @@ Please provide:
     });
   }
 });
+
+// Helper function to call the Docker Model Runner API
+async function callDockerModelRunner(endpoint, model, prompt) {
+  return await axios.post(endpoint, {
+    model: model,
+    prompt: prompt,
+    stream: false,
+    options: {
+      temperature: 0.7,
+      max_tokens: 1024
+    }
+  }, {
+    timeout: 60000, // 60 second timeout
+    headers: {
+      'Content-Type': 'application/json'
+    }
+  });
+}
 
 module.exports = router;
