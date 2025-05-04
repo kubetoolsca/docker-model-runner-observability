@@ -47,30 +47,20 @@ router.post('/analyze', upload.single('file'), async (req, res) => {
     const pdfData = await pdfParse(dataBuffer);
     const extractedText = pdfData.text;
     
-    // For development without docker model runner, return mock data
-    if (!process.env.DMR_API_ENDPOINT) {
-      console.log('DMR_API_ENDPOINT not set. Using mock analysis.');
-      
-      // Clean up the uploaded file
-      fs.unlinkSync(filePath);
-      
-      return res.json({ 
-        result: `Analysis for "${req.file.originalname}" (${extractedText.length} characters extracted):\n\n` +
-                `This is a mock analysis response. To enable real analysis, set the DMR_API_ENDPOINT environment variable.\n\n` +
-                `Extracted text sample: "${extractedText.substring(0, 200)}..."`
-      });
-    }
-    
+    let result = '';
+
     try {
-      const dmrEndpoint = process.env.DMR_API_ENDPOINT;
-      const targetModel = process.env.TARGET_MODEL || 'ai/llama3.2:1B-Q8_0';
-      
-      console.log(`Calling Docker Model Runner at: ${dmrEndpoint}`);
-      console.log(`Using model: ${targetModel}`);
-      
-      // Prepare the prompt for the LLM
-      const prompt = `Analyze the following document and provide a concise summary:
-      
+      // Only attempt to call Docker Model Runner if the endpoint is configured
+      if (process.env.DMR_API_ENDPOINT) {
+        const dmrEndpoint = process.env.DMR_API_ENDPOINT;
+        const targetModel = process.env.TARGET_MODEL || 'ai/llama3.2:1B-Q8_0';
+        
+        console.log(`Calling Docker Model Runner at: ${dmrEndpoint}`);
+        console.log(`Using model: ${targetModel}`);
+        
+        // Prepare the prompt for the LLM
+        const prompt = `Analyze the following document and provide a concise summary:
+        
 Document Name: ${req.file.originalname}
 Document Type: PDF
 Document Content:
@@ -82,44 +72,62 @@ Please provide:
 2. Main topics or key points
 3. Any action items or recommendations`;
 
-      // Call the Docker Model Runner API
-      const response = await axios.post(dmrEndpoint, {
-        model: targetModel,
-        prompt: prompt,
-        stream: false,
-        options: {
-          temperature: 0.7,
-          max_tokens: 1024
-        }
-      }, {
-        timeout: 60000, // 60 second timeout
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
+        try {
+          // Call the Docker Model Runner API
+          const response = await axios.post(dmrEndpoint, {
+            model: targetModel,
+            prompt: prompt,
+            stream: false,
+            options: {
+              temperature: 0.7,
+              max_tokens: 1024
+            }
+          }, {
+            timeout: 60000, // 60 second timeout
+            headers: {
+              'Content-Type': 'application/json'
+            }
+          });
 
-      // Extract the result from the response
-      let result;
-      if (response.data && response.data.response) {
-        result = response.data.response;
-      } else if (response.data && response.data.result) {
-        result = response.data.result;
+          // Extract the result from the response
+          if (response.data && response.data.response) {
+            result = response.data.response;
+          } else if (response.data && response.data.result) {
+            result = response.data.result;
+          } else {
+            result = JSON.stringify(response.data);
+          }
+        } catch (dmrError) {
+          console.error('Error calling Docker Model Runner:', dmrError.message);
+          console.error('Error details:', dmrError.response?.data || 'No additional error details');
+          
+          // Fallback to a basic analysis
+          result = `Analysis for "${req.file.originalname}" (without LLM enhancement):\n\n` +
+                  `The document contains ${extractedText.length} characters.\n\n` +
+                  `Text Sample:\n${extractedText.substring(0, 500)}...\n\n` +
+                  `Note: AI-powered analysis is unavailable. Please check if Docker Model Runner is properly set up and running.\n` +
+                  `Error: ${dmrError.message}`;
+        }
       } else {
-        result = JSON.stringify(response.data);
+        // Fallback when DMR_API_ENDPOINT is not set
+        result = `Analysis for "${req.file.originalname}" (${extractedText.length} characters extracted):\n\n` +
+                `This is a basic analysis response since Docker Model Runner is not configured.\n\n` +
+                `Extracted text sample: "${extractedText.substring(0, 500)}..."`;
       }
 
       // Return the analysis result
       res.json({ result });
-    } catch (error) {
-      console.error('Error calling Docker Model Runner:', error.message);
-      console.error('Error details:', error.response?.data || 'No additional error details');
       
-      // Return a more user-friendly error
-      res.status(500).json({ 
-        error: 'Error analyzing document with LLM',
-        details: error.message,
-        message: 'There was an issue communicating with the Docker Model Runner. Please ensure it is running and accessible.'
-      });
+    } catch (error) {
+      console.error('General error during document analysis:', error);
+      
+      // Return a fallback result with the extracted text
+      const fallbackResult = `Analysis for "${req.file.originalname}" (extracted text only):\n\n` +
+                            `The document contains ${extractedText.length} characters.\n\n` +
+                            `Text Sample:\n${extractedText.substring(0, 500)}...\n\n` +
+                            `Note: Full analysis is unavailable due to a system error.`;
+      
+      res.json({ result: fallbackResult });
     }
 
     // Clean up the uploaded file

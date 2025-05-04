@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
-import { Loader } from 'lucide-react';
+import { Loader, FileText } from 'lucide-react';
 
 interface DocumentAnalysisResultProps {
   result: string | null;
@@ -33,9 +33,12 @@ const DocumentAnalysisResult: React.FC<DocumentAnalysisResultProps> = ({
           </div>
         ) : (
           <div>
-            <h3 className="text-lg font-semibold text-gray-800 mb-3">
-              Analysis Results for "{documentName}"
-            </h3>
+            <div className="flex items-center gap-2 mb-3">
+              <FileText className="h-5 w-5 text-indigo-600" />
+              <h3 className="text-lg font-semibold text-gray-800">
+                Analysis Results for "{documentName}"
+              </h3>
+            </div>
             <div className="bg-gray-50 rounded-md p-4 whitespace-pre-wrap text-sm font-mono">
               {result}
             </div>

@@ -71,13 +71,13 @@ const DocumentUploader: React.FC<DocumentUploaderProps> = ({
         body: formData,
       });
       
+      const data = await response.json();
+      
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        console.error("Server error:", errorData);
-        throw new Error(errorData.message || `Server responded with ${response.status}`);
+        console.error("Server error:", data);
+        throw new Error(data.message || data.error || `Server responded with ${response.status}`);
       }
       
-      const data = await response.json();
       setAnalysisResult(data.result);
       
       toast({
@@ -87,10 +87,16 @@ const DocumentUploader: React.FC<DocumentUploaderProps> = ({
     } catch (error) {
       console.error("Error analyzing document:", error);
       toast({
-        title: "Analysis failed",
-        description: error instanceof Error ? error.message : "There was an error analyzing your document",
+        title: "Analysis issue",
+        description: error instanceof Error ? error.message : "There was an issue analyzing your document, but we've extracted some basic information.",
         variant: "destructive"
       });
+      
+      // If we have partial results, still show them
+      if (error instanceof Error && error.message.includes("partial results:")) {
+        const partialResult = error.message.split("partial results:")[1].trim();
+        setAnalysisResult(partialResult);
+      }
     } finally {
       setIsAnalyzing(false);
     }

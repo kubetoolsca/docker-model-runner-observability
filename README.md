@@ -63,11 +63,24 @@ This application consists of:
 3. Wait for the analysis to complete
 4. Review the generated insights, summary, and key points
 
+## Note on Docker Model Runner
+
+If Docker Model Runner is not correctly set up or the specified model is not available, the application will still function in fallback mode:
+- PDF text extraction will work
+- A basic analysis will be provided without LLM enhancement
+- Error details will be displayed in the analysis result
+
+To ensure full AI functionality, verify that:
+- Docker Model Runner is enabled in Docker Desktop
+- The correct model is pulled and available
+- The Docker host can reach the Model Runner API (typically at http://host.docker.internal:12434/v1)
+
 ## Troubleshooting
 
 - If you're unable to access the application, check if all containers are running with `docker-compose ps`
 - View logs for specific services with `docker-compose logs [service-name]` (e.g., `docker-compose logs frontend`)
 - Ensure Docker Model Runner is enabled in Docker Desktop settings
+- If document analysis fails, check backend logs with `docker-compose logs mcp-server`
 
 ## License
 
