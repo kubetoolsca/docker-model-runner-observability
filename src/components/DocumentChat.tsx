@@ -4,12 +4,12 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Loader, Send, MessageSquare } from 'lucide-react';
-import { toast } from '@/components/ui/sonner';
+import { toast } from 'sonner';
 import axios from 'axios';
 
 interface DocumentChatProps {
   documentId: string | null;
-  documentName: string | null;
+  documentName: string;
 }
 
 const DocumentChat: React.FC<DocumentChatProps> = ({ documentId, documentName }) => {
@@ -17,8 +17,8 @@ const DocumentChat: React.FC<DocumentChatProps> = ({ documentId, documentName })
   const [chatHistory, setChatHistory] = useState<Array<{ role: 'user' | 'assistant', content: string }>>([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  if (!documentId || !documentName) {
-    return null;
+  if (!documentId) {
+    return null; // Don't render if no document ID is available
   }
 
   const handleSendMessage = async () => {
@@ -36,6 +36,7 @@ const DocumentChat: React.FC<DocumentChatProps> = ({ documentId, documentName })
       });
       
       setChatHistory(prev => [...prev, { role: 'assistant', content: response.data.result }]);
+      toast.success('Response received');
     } catch (error) {
       console.error('Error sending message:', error);
       toast.error('Failed to send message. Please try again.');

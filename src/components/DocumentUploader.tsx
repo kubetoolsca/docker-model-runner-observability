@@ -1,9 +1,8 @@
-
 import React, { useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { FileText, Upload, AlertCircle } from 'lucide-react';
-import { toast } from '@/components/ui/sonner';
+import { toast } from 'sonner';
 import axios from 'axios';
 
 interface DocumentUploaderProps {
@@ -72,7 +71,7 @@ const DocumentUploader: React.FC<DocumentUploaderProps> = ({
     
     setIsAnalyzing(true);
     setAnalysisResult(null);
-    setDocumentId(null);
+    setDocumentId(null); // Reset document ID before new upload
     
     try {
       const response = await axios.post('/api/document/analyze', formData, {
@@ -81,11 +80,22 @@ const DocumentUploader: React.FC<DocumentUploaderProps> = ({
         }
       });
       
+      console.log('Document analysis response:', response.data);
+      
       setAnalysisResult(response.data.result);
       setDocumentName(selectedFile.name);
-      setDocumentId(response.data.documentId || null);
+      
+      // Make sure to set the document ID from the response
+      if (response.data.documentId) {
+        console.log('Setting document ID:', response.data.documentId);
+        setDocumentId(response.data.documentId);
+        toast.success('Document analyzed successfully! You can now chat with it.');
+      } else {
+        console.warn('No document ID received from server');
+        toast.warning('Document analyzed, but chat functionality may be limited');
+      }
+      
       setSelectedFile(null);
-      toast.success('Document successfully analyzed');
     } catch (error) {
       console.error('Error uploading document:', error);
       setUploadError('Failed to upload and analyze document');

@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import DocumentUploader from './components/DocumentUploader';
 import DocumentAnalysisResult from './components/DocumentAnalysisResult';
 import DocumentChat from './components/DocumentChat';
-import { Toaster } from './components/ui/sonner';
+import { Toaster } from 'sonner';
 import './App.css';
 
 function App() {
@@ -35,10 +35,12 @@ function App() {
           documentName={documentName}
         />
 
-        <DocumentChat 
-          documentId={documentId} 
-          documentName={documentName}
-        />
+        {documentId && (
+          <DocumentChat 
+            documentId={documentId} 
+            documentName={documentName}
+          />
+        )}
       </main>
 
       <footer className="mt-12 text-center text-sm text-gray-500">

@@ -7,7 +7,7 @@ import TaskList from '@/components/TaskList';
 import DocumentUploader from '@/components/DocumentUploader';
 import DocumentAnalysisResult from '@/components/DocumentAnalysisResult';
 import DocumentChat from '@/components/DocumentChat';
-import { Toaster } from '@/components/ui/sonner';
+import { Toaster } from 'sonner';
 
 const Index: React.FC = () => {
   const [analysisResult, setAnalysisResult] = useState<string | null>(null);
@@ -37,10 +37,12 @@ const Index: React.FC = () => {
               isLoading={isAnalyzing} 
               documentName={documentName} 
             />
-            <DocumentChat 
-              documentId={documentId} 
-              documentName={documentName}
-            />
+            {documentId && (
+              <DocumentChat 
+                documentId={documentId} 
+                documentName={documentName}
+              />
+            )}
           </div>
           
           <h2 className="text-xl font-semibold text-gray-800 mb-4">Task Management</h2>
