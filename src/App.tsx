@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import DocumentUploader from './components/DocumentUploader';
 import DocumentAnalysisResult from './components/DocumentAnalysisResult';
 import DocumentChat from './components/DocumentChat';
@@ -11,6 +11,11 @@ function App() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [documentName, setDocumentName] = useState('');
   const [documentId, setDocumentId] = useState<string | null>(null);
+
+  // Debug logging to track document ID changes
+  useEffect(() => {
+    console.log("Document ID updated in App:", documentId);
+  }, [documentId]);
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
@@ -36,10 +41,12 @@ function App() {
         />
 
         {documentId && (
-          <DocumentChat 
-            documentId={documentId} 
-            documentName={documentName}
-          />
+          <div className="mt-6">
+            <DocumentChat 
+              documentId={documentId} 
+              documentName={documentName}
+            />
+          </div>
         )}
       </main>
 

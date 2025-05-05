@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -16,9 +16,16 @@ const DocumentChat: React.FC<DocumentChatProps> = ({ documentId, documentName })
   const [message, setMessage] = useState('');
   const [chatHistory, setChatHistory] = useState<Array<{ role: 'user' | 'assistant', content: string }>>([]);
   const [isLoading, setIsLoading] = useState(false);
+  
+  // Debug log when component mounts or documentId changes
+  useEffect(() => {
+    console.log("DocumentChat component rendered with ID:", documentId);
+  }, [documentId]);
 
+  // Early return if no document ID
   if (!documentId) {
-    return null; // Don't render if no document ID is available
+    console.log("No document ID provided to DocumentChat, not rendering");
+    return null;
   }
 
   const handleSendMessage = async () => {
@@ -30,11 +37,13 @@ const DocumentChat: React.FC<DocumentChatProps> = ({ documentId, documentName })
     setIsLoading(true);
 
     try {
+      console.log("Sending chat request for document:", documentId);
       const response = await axios.post('/api/document/chat', {
         documentId,
         message: userMessage
       });
       
+      console.log("Received chat response:", response.data);
       setChatHistory(prev => [...prev, { role: 'assistant', content: response.data.result }]);
       toast.success('Response received');
     } catch (error) {
@@ -50,7 +59,7 @@ const DocumentChat: React.FC<DocumentChatProps> = ({ documentId, documentName })
   };
 
   return (
-    <Card className="mt-6 animate-fade-in">
+    <Card className="animate-fade-in">
       <CardContent className="pt-6">
         <div className="flex items-center gap-2 mb-4">
           <MessageSquare className="h-5 w-5 text-indigo-600" />

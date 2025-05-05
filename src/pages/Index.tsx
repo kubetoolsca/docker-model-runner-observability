@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { TaskProvider } from '@/contexts/TaskContext';
 import TaskForm from '@/components/TaskForm';
 import TaskFilters from '@/components/TaskFilters';
@@ -14,6 +14,11 @@ const Index: React.FC = () => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [documentName, setDocumentName] = useState<string>("");
   const [documentId, setDocumentId] = useState<string | null>(null);
+
+  // Debug logging to track document ID changes
+  useEffect(() => {
+    console.log("Document ID updated in Index:", documentId);
+  }, [documentId]);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -38,10 +43,12 @@ const Index: React.FC = () => {
               documentName={documentName} 
             />
             {documentId && (
-              <DocumentChat 
-                documentId={documentId} 
-                documentName={documentName}
-              />
+              <div className="mt-6">
+                <DocumentChat 
+                  documentId={documentId} 
+                  documentName={documentName}
+                />
+              </div>
             )}
           </div>
           

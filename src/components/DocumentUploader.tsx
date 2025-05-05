@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -72,6 +73,8 @@ const DocumentUploader: React.FC<DocumentUploaderProps> = ({
     setIsAnalyzing(true);
     setAnalysisResult(null);
     setDocumentId(null); // Reset document ID before new upload
+    
+    console.log("Starting document analysis...");
     
     try {
       const response = await axios.post('/api/document/analyze', formData, {
