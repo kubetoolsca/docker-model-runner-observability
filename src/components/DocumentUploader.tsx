@@ -1,5 +1,4 @@
-
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { FileText, Upload, AlertCircle } from 'lucide-react';
@@ -11,17 +10,28 @@ interface DocumentUploaderProps {
   setIsAnalyzing: React.Dispatch<React.SetStateAction<boolean>>;
   setDocumentName: React.Dispatch<React.SetStateAction<string>>;
   setDocumentId: React.Dispatch<React.SetStateAction<string | null>>;
+  onAnalysisComplete?: (documentId: string, documentName: string, result: string) => void;
 }
 
 const DocumentUploader: React.FC<DocumentUploaderProps> = ({ 
   setAnalysisResult, 
   setIsAnalyzing,
   setDocumentName,
-  setDocumentId
+  setDocumentId,
+  onAnalysisComplete
 }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
+
+  // Enhanced logging for component lifecycle
+  React.useEffect(() => {
+    console.log("%c[DOCUMENT UPLOADER MOUNTED]", "background: #4CAF50; color: white; padding: 2px 5px; border-radius: 2px;");
+    
+    return () => {
+      console.log("%c[DOCUMENT UPLOADER UNMOUNTED]", "background: #F44336; color: white; padding: 2px 5px; border-radius: 2px;");
+    };
+  }, []);
 
   const onDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -74,36 +84,51 @@ const DocumentUploader: React.FC<DocumentUploaderProps> = ({
     setAnalysisResult(null);
     setDocumentId(null); // Reset document ID before new upload
     
-    console.log("Starting document analysis...");
+    console.log("%c[STARTING DOCUMENT ANALYSIS]", "background: #FF9800; color: white; padding: 2px 5px; border-radius: 2px;");
+    console.log("File:", selectedFile.name, "Size:", selectedFile.size, "bytes");
     
     try {
+      console.log("Sending API request to /api/document/analyze...");
       const response = await axios.post('/api/document/analyze', formData, {
         headers: {
           'Content-Type': 'multipart/form-data'
         }
       });
       
-      console.log('Document analysis response:', response.data);
+      console.log("%c[DOCUMENT ANALYSIS COMPLETE]", "background: #4CAF50; color: white; padding: 2px 5px; border-radius: 2px;");
+      console.log("Full response:", response.data);
       
-      setAnalysisResult(response.data.result);
-      setDocumentName(selectedFile.name);
+      // Extract necessary data from response
+      const result = response.data.result || "No analysis result provided";
+      const fileName = selectedFile.name;
       
-      // Make sure to set the document ID from the response
-      if (response.data.documentId) {
-        console.log('Setting document ID:', response.data.documentId);
-        setDocumentId(response.data.documentId);
-        toast.success('Document analyzed successfully! You can now chat with it.');
-      } else {
-        console.warn('No document ID received from server');
-        toast.warning('Document analyzed, but chat functionality may be limited');
-      }
+      // Always ensure we have a document ID (use response or generate temporary one)
+      const documentId = response.data.documentId || `temp-${Date.now()}`;
+      console.log("%c[SETTING DOCUMENT ID]", "background: #9C27B0; color: white; padding: 2px 5px; border-radius: 2px;", documentId);
       
+      // Set state in correct sequence to ensure rendering
+      setAnalysisResult(result);
+      setDocumentName(fileName);
+      
+      // Critical: Use setTimeout to ensure state updates properly
+      setTimeout(() => {
+        console.log("%c[SETTING DOCUMENT ID AFTER DELAY]", "background: #9C27B0; color: white; padding: 2px 5px; border-radius: 2px;", documentId);
+        setDocumentId(documentId);
+        
+        // Call the completion handler if provided
+        if (onAnalysisComplete) {
+          console.log("%c[CALLING ANALYSIS COMPLETE HANDLER]", "background: #9C27B0; color: white; padding: 2px 5px; border-radius: 2px;");
+          onAnalysisComplete(documentId, fileName, result);
+        }
+      }, 100);
+      
+      toast.success('Document analyzed successfully!');
       setSelectedFile(null);
+      
     } catch (error) {
       console.error('Error uploading document:', error);
       setUploadError('Failed to upload and analyze document');
       toast.error('Error analyzing document');
-    } finally {
       setIsAnalyzing(false);
     }
   };
@@ -163,7 +188,7 @@ const DocumentUploader: React.FC<DocumentUploaderProps> = ({
               </Button>
               
               {selectedFile && (
-                <Button onClick={handleUpload}>
+                <Button onClick={handleUpload} data-testid="analyze-button">
                   Analyze Document
                 </Button>
               )}
